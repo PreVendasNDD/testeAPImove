@@ -1,4 +1,4 @@
-name: Send XML to iComprova
+name: Enviar MDF-e e CT-e (iComprova)
 
 on:
   workflow_dispatch:
@@ -9,29 +9,52 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Get token
-        id: token
+      - name: Instalar jq
+        run: sudo apt-get update && sudo apt-get install -y jq
+
+      - name: Gerar Token
         run: |
-          TOKEN=$(curl -s -X POST "https://icomprova.nddcargo.com.br:9051/connect/token" \
+          curl -s -X POST "https://icomprova.nddcargo.com.br:9051/connect/token" \
             -H "Content-Type: application/x-www-form-urlencoded" \
-            -d "client_id=4a3a17846e714b3288682c5260455347" \
-            -d "client_secret=FFVkTyaM4zVsLYAhKpGIT57C72EzYPSOqFO+O/P9y0Y=" \
+            -d "client_id=${{ secrets.CLIENT_ID }}" \
+            -d "client_secret=${{ secrets.CLIENT_SECRET }}" \
             -d "grant_type=client_credentials" \
             -d "scope=i-comprova-entregas-integration-api" \
-            | jq -r .access_token)
-          echo "TOKEN=$TOKEN" >> $GITHUB_ENV
+            > token.json
+          echo "TOKEN=$(jq -r .access_token token.json)" >> $GITHUB_ENV
 
-      - name: Send MDF-e
+      - name: Enviar MDF-e
         run: |
           curl -s -X POST "https://polaris-dev.nddcargo.com.br:9553/api/recepcoes/mdfe" \
             -H "Authorization: Bearer $TOKEN" \
             -H "Content-Type: application/json" \
-            -d @requests/payload.json > responses/result.json
+            -d @requests/mdfe.json \
+            > mdfe_resp.json
 
-      - name: Commit response
+      - name: Enviar CT-e
+        run: |
+          TOKEN_VIAGEM=$(jq -r '.token // empty' mdfe_resp.json)
+          jq --arg t "$TOKEN_VIAGEM" '.token=$t' requests/cte.json > cte_payload.json
+          curl -s -X POST "https://polaris-dev.nddcargo.com.br:9553/api/recepcoes/cte" \
+            -H "Authorization: Bearer $TOKEN" \
+            -H "Content-Type: application/json" \
+            -d @cte_payload.json \
+            > cte_resp.json
+
+      - name: Consolidar Resultado
+        run: |
+          jq -n \
+            --slurpfile mdfe mdfe_resp.json \
+            --slurpfile cte cte_resp.json \
+            '{
+              mdfe: $mdfe[0],
+              cte:  $cte[0]
+            }' > responses/result.json
+
+      - name: Commitar Resultado
         run: |
           git config user.name "github-actions"
           git config user.email "actions@github.com"
           git add responses/result.json
-          git commit -m "Resposta iComprova"
+          git commit -m "Resultado MDF-e e CT-e"
           git push
