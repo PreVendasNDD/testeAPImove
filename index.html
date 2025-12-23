@@ -4,19 +4,26 @@
   <meta charset="UTF-8">
   <title>Teste iComprova</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    body { background:#111; color:#fff; font-family:Arial; padding:30px }
+    textarea { width:100%; height:200px; margin:10px 0 }
+    button { padding:10px 18px; margin:5px 0; cursor:pointer }
+    pre { background:#000; padding:15px; white-space:pre-wrap }
+    h2 { color:#4fc3f7 }
+  </style>
 </head>
-<body style="background:#0e0e0e;color:#fff;font-family:Arial;padding:30px">
+<body>
 
-<h2>Teste iComprova (COM PROXY)</h2>
+<h2>iComprova – Teste Oficial</h2>
 
 <h3>MDF-e</h3>
-<textarea id="xmlMDFe" style="width:100%;height:200px"></textarea><br>
+<textarea id="xmlMDFe" placeholder="Cole o XML do MDF-e"></textarea>
 <button onclick="enviarMDFe()">Enviar MDF-e</button>
 <pre id="outMDFe"></pre>
 
 <h3>CT-e</h3>
-<textarea id="xmlCTe" style="width:100%;height:200px"></textarea><br>
-<input id="tokenViagem" placeholder="token viagem"><br>
+<textarea id="xmlCTe" placeholder="Cole o XML do CT-e"></textarea>
+<input id="tokenViagem" placeholder="Token da viagem (se existir)">
 <button onclick="enviarCTe()">Enviar CT-e</button>
 <pre id="outCTe"></pre>
 
