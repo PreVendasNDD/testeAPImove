@@ -1,206 +1,47 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-  <meta charset="UTF-8" />
-  <title>Teste Completo iComprova</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <style>
-    body { font-family: Arial, sans-serif; background:#0e0e0e; color:#fff; padding:30px; }
-    h2 { color:#1e88e5; }
-    h3 { color:#4caf50; margin-top:40px; }
-    button { padding:12px 20px; font-size:16px; cursor:pointer; background:#1e88e5; color:#fff; border:none; border-radius:4px; margin:10px 5px; }
-    button.enviar { background:#43a047; }
-    textarea { width:100%; height:200px; background:#1c1c1c; color:#fff; border:1px solid #333; padding:10px; margin:10px 0; font-family:monospace; font-size:14px; }
-    pre { margin-top:10px; background:#1c1c1c; padding:15px; border-radius:4px; overflow-x:auto; white-space:pre-wrap; border:1px solid #2a2a2a; }
-    .section { border-left:4px solid #1e88e5; padding-left:15px; margin:25px 0; }
-    input[type="text"]{ width:100%; padding:8px; background:#1c1c1c; color:white; border:1px solid #333; margin:5px 0; }
-    .ok { color:#4caf50; }
-    .bad { color:#ff5252; }
-    .muted { color:#bdbdbd; }
-  </style>
+  <meta charset="UTF-8">
+  <title>Teste iComprova</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
 </head>
-<body>
+<body style="background:#0e0e0e;color:#fff;font-family:Arial;padding:30px">
 
-  <h2>Teste Completo – iComprova / NDD MOVE</h2>
+<h2>Teste iComprova (COM PROXY)</h2>
 
-  <div class="section">
-    <h3>0. Diagnóstico</h3>
-    <pre id="diag">Carregando...</pre>
-  </div>
+<h3>MDF-e</h3>
+<textarea id="xmlMDFe" style="width:100%;height:200px"></textarea><br>
+<button onclick="enviarMDFe()">Enviar MDF-e</button>
+<pre id="outMDFe"></pre>
 
-  <div class="section">
-    <h3>1. Obter Token de Acesso</h3>
-    <button type="button" id="btnToken" onclick="obterToken()">Obter Token</button>
-    <pre id="resultadoToken">Clique no botão para gerar o token...</pre>
-  </div>
+<h3>CT-e</h3>
+<textarea id="xmlCTe" style="width:100%;height:200px"></textarea><br>
+<input id="tokenViagem" placeholder="token viagem"><br>
+<button onclick="enviarCTe()">Enviar CT-e</button>
+<pre id="outCTe"></pre>
 
-  <div class="section">
-    <h3>2. Enviar MDF-e (Viagem)</h3>
-    <textarea id="xmlMDFe" placeholder="Cole o XML do MDF-e aqui..."></textarea>
-    <button type="button" class="enviar" id="btnMDFe" onclick="enviarMDFe()">Enviar MDF-e</button>
-    <pre id="resultadoMDFe">Resultado do MDF-e aparecerá aqui...</pre>
-  </div>
+<script>
+async function enviarMDFe() {
+  const xml = document.getElementById("xmlMDFe").value;
+  const r = await fetch("http://localhost:3000/mdfe", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ documento: xml })
+  });
+  document.getElementById("outMDFe").textContent = await r.text();
+}
 
-  <div class="section">
-    <h3>3. Enviar CT-e (Entrega Vinculada)</h3>
-    <textarea id="xmlCTe" placeholder="Cole o XML do CT-e aqui..."></textarea>
-    <input type="text" id="tokenViagem" placeholder="Token da viagem">
-    <button type="button" class="enviar" id="btnCTe" onclick="enviarCTe()">Enviar CT-e</button>
-    <pre id="resultadoCTe">Resultado do CT-e aparecerá aqui...</pre>
-  </div>
-
-  <script>
-    // ========= DIAGNÓSTICO VISÍVEL (pra provar clique/JS rodando) =========
-    const diag = document.getElementById("diag");
-    const setDiag = (msg) => { diag.textContent = msg; };
-
-    window.addEventListener("load", () => {
-      const origin = window.location.origin;
-      const proto = window.location.protocol;
-      setDiag(
-        "JS OK. Página carregada.\n" +
-        "protocol: " + proto + "\n" +
-        "origin: " + origin + "\n\n" +
-        "Se protocol for 'file:' (abrindo do PC), o navegador pode bloquear requests (CORS/origin null).\n" +
-        "Mas os cliques AINDA devem mudar os textos abaixo."
-      );
-    });
-
-    window.onerror = function(message, source, lineno, colno) {
-      setDiag(
-        "ERRO JS (isso trava tudo):\n" +
-        String(message) + "\n" +
-        "Arquivo: " + String(source) + "\n" +
-        "Linha: " + lineno + " Col: " + colno
-      );
-    };
-
-    window.onunhandledrejection = function(e) {
-      setDiag("PROMISE REJEITADA:\n" + (e && e.reason ? String(e.reason) : "desconhecido"));
-    };
-
-    // ========= VARIÁVEIS =========
-    let accessToken = '';
-    let tokenViagemGerado = '';
-
-    // ========= CONFIG =========
-    const TOKEN_URL = "https://icomprova.nddcargo.com.br:9051/connect/token";
-    const API_BASE  = "https://polaris-dev.nddcargo.com.br:9553/api";
-    const MDFE_URL  = API_BASE + "/recepcoes/mdfe";
-    const CTE_URL   = API_BASE + "/recepcoes/cte";
-
-    // ========= HELPERS =========
-    function markClicked(id, text) {
-      const el = document.getElementById(id);
-      el.textContent = text;
-    }
-
-    async function obterToken() {
-      markClicked("resultadoToken", "CLIQUEI NO BOTÃO. Requisitando token...");
-
-      const body = new URLSearchParams({
-        client_id: "4a3a17846e714b3288682c5260455347",
-        client_secret: "FFVkTyaM4zVsLYAhKpGIT57C72EzYPSOqFO+O/P9y0Y=",
-        grant_type: "client_credentials",
-        scope: "i-comprova-entregas-integration-api"
-      });
-
-      try {
-        const r = await fetch(TOKEN_URL, {
-          method: "POST",
-          headers: { "Content-Type": "application/x-www-form-urlencoded" },
-          body: body.toString()
-        });
-
-        const t = await r.text();
-
-        if (!r.ok) {
-          markClicked("resultadoToken", "HTTP " + r.status + "\n\n" + t);
-          return;
-        }
-
-        const d = JSON.parse(t);
-        accessToken = d.access_token || "";
-        markClicked("resultadoToken", "OK (TOKEN)\n\n" + t);
-      } catch (e) {
-        markClicked("resultadoToken", "ERRO (TOKEN)\n\n" + (e && e.message ? e.message : String(e)));
-      }
-    }
-
-    async function enviarMDFe() {
-      markClicked("resultadoMDFe", "CLIQUEI NO BOTÃO. Preparando envio MDF-e...");
-
-      const xml = document.getElementById("xmlMDFe").value.trim();
-      if (!xml) { markClicked("resultadoMDFe", "ERRO: XML MDF-e vazio."); return; }
-      if (!accessToken) { markClicked("resultadoMDFe", "ERRO: token vazio. Clique em 'Obter Token' antes."); return; }
-
-      try {
-        markClicked("resultadoMDFe", "Enviando MDF-e para:\n" + MDFE_URL);
-
-        const r = await fetch(MDFE_URL, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "Authorization": "Bearer " + accessToken
-          },
-          body: JSON.stringify({ documento: xml })
-        });
-
-        const t = await r.text();
-
-        if (!r.ok) {
-          markClicked("resultadoMDFe", "HTTP " + r.status + "\n\n" + t);
-          return;
-        }
-
-        markClicked("resultadoMDFe", "OK (MDF-e)\n\n" + t);
-
-        try {
-          const d = JSON.parse(t);
-          if (d && d.token) {
-            tokenViagemGerado = d.token;
-            document.getElementById("tokenViagem").value = d.token;
-          }
-        } catch {}
-      } catch (e) {
-        markClicked("resultadoMDFe", "ERRO (MDF-e)\n\n" + (e && e.message ? e.message : String(e)));
-      }
-    }
-
-    async function enviarCTe() {
-      markClicked("resultadoCTe", "CLIQUEI NO BOTÃO. Preparando envio CT-e...");
-
-      const xml = document.getElementById("xmlCTe").value.trim();
-      const tokenViagem = document.getElementById("tokenViagem").value.trim() || tokenViagemGerado;
-
-      if (!xml) { markClicked("resultadoCTe", "ERRO: XML CT-e vazio."); return; }
-      if (!accessToken) { markClicked("resultadoCTe", "ERRO: token vazio. Clique em 'Obter Token' antes."); return; }
-
-      try {
-        markClicked("resultadoCTe", "Enviando CT-e para:\n" + CTE_URL);
-
-        const r = await fetch(CTE_URL, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "Authorization": "Bearer " + accessToken
-          },
-          body: JSON.stringify({ documento: xml, token: tokenViagem })
-        });
-
-        const t = await r.text();
-
-        if (!r.ok) {
-          markClicked("resultadoCTe", "HTTP " + r.status + "\n\n" + t);
-          return;
-        }
-
-        markClicked("resultadoCTe", "OK (CT-e)\n\n" + t);
-      } catch (e) {
-        markClicked("resultadoCTe", "ERRO (CT-e)\n\n" + (e && e.message ? e.message : String(e)));
-      }
-    }
-  </script>
+async function enviarCTe() {
+  const xml = document.getElementById("xmlCTe").value;
+  const token = document.getElementById("tokenViagem").value;
+  const r = await fetch("http://localhost:3000/cte", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ documento: xml, token })
+  });
+  document.getElementById("outCTe").textContent = await r.text();
+}
+</script>
 
 </body>
 </html>
