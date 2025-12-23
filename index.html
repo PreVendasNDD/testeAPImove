@@ -62,167 +62,103 @@
 </head>
 <body>
 
-  <h2>Teste Completo – iComprova / NDD MOVE</h2>
+<h2>Teste Completo – iComprova / NDD MOVE</h2>
 
-  <div class="section">
-    <h3>1. Obter Token de Acesso</h3>
-    <button onclick="obterToken()">Obter Token</button>
-    <pre id="resultadoToken">Clique no botão para gerar o token...</pre>
-  </div>
+<div class="section">
+  <h3>1. Obter Token</h3>
+  <button onclick="obterToken()">Obter Token</button>
+  <pre id="resultadoToken"></pre>
+</div>
 
-  <div class="section">
-    <h3>2. Enviar MDF-e (Viagem)</h3>
-    <p>Cole o XML completo do MDF-e (tag &lt;mdfeProc&gt; autorizado pela SEFAZ):</p>
-    <textarea id="xmlMDFe" placeholder="Cole o XML do MDF-e aqui..."></textarea>
-    <button class="enviar" onclick="enviarMDFe()">Enviar MDF-e</button>
-    <pre id="resultadoMDFe">Resultado do MDF-e aparecerá aqui...</pre>
-  </div>
+<div class="section">
+  <h3>2. Enviar MDF-e</h3>
+  <textarea id="xmlMDFe"></textarea>
+  <button class="enviar" onclick="enviarMDFe()">Enviar MDF-e</button>
+  <pre id="resultadoMDFe"></pre>
+</div>
 
-  <div class="section">
-    <h3>3. Enviar CT-e (Entrega Vinculada)</h3>
-    <p>Cole o XML do CT-e vinculado ao MDF-e acima:</p>
-    <textarea id="xmlCTe" placeholder="Cole o XML do CT-e aqui..."></textarea>
-    <p>Token da viagem:</p>
-    <input type="text" id="tokenViagem">
-    <button class="enviar" onclick="enviarCTe()">Enviar CT-e</button>
-    <pre id="resultadoCTe">Resultado do CT-e aparecerá aqui...</pre>
-  </div>
+<div class="section">
+  <h3>3. Enviar CT-e</h3>
+  <textarea id="xmlCTe"></textarea>
+  <input type="text" id="tokenViagem">
+  <button class="enviar" onclick="enviarCTe()">Enviar CT-e</button>
+  <pre id="resultadoCTe"></pre>
+</div>
 
-  <script>
-    let accessToken = '';
-    let tokenViagemGerado = '';
+<script>
+let accessToken = '';
+let tokenViagemGerado = '';
 
-    async function obterToken() {
-      const resultado = document.getElementById("resultadoToken");
-      resultado.textContent = "Requisitando token...";
+async function obterToken() {
+  const body = new URLSearchParams({
+    client_id: "4a3a17846e714b3288682c5260455347",
+    client_secret: "FFVkTyaM4zVsLYAhKpGIT57C72EzYPSOqFO+O/P9y0Y=",
+    grant_type: "client_credentials",
+    scope: "i-comprova-entregas-integration-api"
+  });
 
-      const body = new URLSearchParams({
-        client_id: "4a3a17846e714b3288682c5260455347",
-        client_secret: "FFVkTyaM4zVsLYAhKpGIT57C72EzYPSOqFO+O/P9y0Y=",
-        grant_type: "client_credentials",
-        scope: "i-comprova-entregas-integration-api"
-      });
-
-      try {
-        const response = await fetch(
-          "https://icomprova.nddcargo.com.br:9051/connect/token",
-          {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/x-www-form-urlencoded"
-            },
-            body: body.toString()
-          }
-        );
-
-        const text = await response.text();
-
-        if (!response.ok) {
-          resultado.innerHTML = `<span class="error">Erro ${response.status}:</span>\n${text}`;
-          return;
-        }
-
-        const data = JSON.parse(text);
-        accessToken = data.access_token;
-
-        resultado.innerHTML =
-          `<span class="success">TOKEN OBTIDO</span>\n\n${data.access_token}\n\nExpira em: ${data.expires_in} segundos`;
-      } catch (err) {
-        resultado.innerHTML = `<span class="error">Erro de conexão:</span>\n${err.message}`;
-      }
+  const r = await fetch(
+    "https://icomprova.nddcargo.com.br:9051/connect/token",
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      body: body.toString()
     }
+  );
 
-    async function enviarMDFe() {
-      const resultado = document.getElementById("resultadoMDFe");
-      resultado.textContent = "Enviando MDF-e...";
+  const t = await r.text();
+  const d = JSON.parse(t);
+  accessToken = d.access_token;
+  document.getElementById("resultadoToken").textContent = t;
+}
 
-      const xml = document.getElementById("xmlMDFe").value.trim();
-      if (!xml) {
-        resultado.innerHTML = `<span class="error">Erro:</span> Cole o XML do MDF-e.`;
-        return;
-      }
-      if (!accessToken) {
-        resultado.innerHTML = `<span class="error">Erro:</span> Obtenha o token primeiro.`;
-        return;
-      }
+async function enviarMDFe() {
+  const xml = document.getElementById("xmlMDFe").value;
 
-      try {
-        const response = await fetch(
-          "https://hmg-icomprova.nddcargo.com.br:9003/api/v2/recepcoes/mdfe",
-          {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              "Authorization": `Bearer ${accessToken}`
-            },
-            body: JSON.stringify({ documento: xml })
-          }
-        );
-
-        const text = await response.text();
-
-        if (!response.ok) {
-          resultado.innerHTML = `<span class="error">Erro ${response.status}:</span>\n${text}`;
-          return;
-        }
-
-        const data = JSON.parse(text);
-        if (data.token) {
-          tokenViagemGerado = data.token;
-          document.getElementById("tokenViagem").value = data.token;
-        }
-
-        resultado.innerHTML =
-          `<span class="success">RESPOSTA MDF-e</span>\n${JSON.stringify(data, null, 2)}`;
-      } catch (err) {
-        resultado.innerHTML = `<span class="error">Erro de conexão:</span>\n${err.message}`;
-      }
+  const r = await fetch(
+    "https://icomprova.nddcargo.com.br:9003/api/v2/recepcoes/mdfe",
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": "Bearer " + accessToken
+      },
+      body: JSON.stringify({ documento: xml })
     }
+  );
 
-    async function enviarCTe() {
-      const resultado = document.getElementById("resultadoCTe");
-      resultado.textContent = "Enviando CT-e...";
+  const t = await r.text();
+  document.getElementById("resultadoMDFe").textContent = t;
 
-      const xml = document.getElementById("xmlCTe").value.trim();
-      const tokenViagem = document.getElementById("tokenViagem").value.trim() || tokenViagemGerado;
-
-      if (!xml) {
-        resultado.innerHTML = `<span class="error">Erro:</span> Cole o XML do CT-e.`;
-        return;
-      }
-      if (!accessToken) {
-        resultado.innerHTML = `<span class="error">Erro:</span> Obtenha o token primeiro.`;
-        return;
-      }
-
-      try {
-        const response = await fetch(
-          "https://hmg-icomprova.nddcargo.com.br:9003/api/v2/recepcoes/cte",
-          {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              "Authorization": `Bearer ${accessToken}`
-            },
-            body: JSON.stringify({ documento: xml, token: tokenViagem })
-          }
-        );
-
-        const text = await response.text();
-
-        if (!response.ok) {
-          resultado.innerHTML = `<span class="error">Erro ${response.status}:</span>\n${text}`;
-          return;
-        }
-
-        const data = JSON.parse(text);
-        resultado.innerHTML =
-          `<span class="success">RESPOSTA CT-e</span>\n${JSON.stringify(data, null, 2)}`;
-      } catch (err) {
-        resultado.innerHTML = `<span class="error">Erro de conexão:</span>\n${err.message}`;
-      }
+  try {
+    const d = JSON.parse(t);
+    if (d.token) {
+      tokenViagemGerado = d.token;
+      document.getElementById("tokenViagem").value = d.token;
     }
-  </script>
+  } catch {}
+}
+
+async function enviarCTe() {
+  const xml = document.getElementById("xmlCTe").value;
+  const token = document.getElementById("tokenViagem").value || tokenViagemGerado;
+
+  const r = await fetch(
+    "https://icomprova.nddcargo.com.br:9003/api/v2/recepcoes/cte",
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": "Bearer " + accessToken
+      },
+      body: JSON.stringify({ documento: xml, token })
+    }
+  );
+
+  const t = await r.text();
+  document.getElementById("resultadoCTe").textContent = t;
+}
+</script>
 
 </body>
 </html>
