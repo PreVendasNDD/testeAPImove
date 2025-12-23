@@ -1,127 +1,55 @@
-name: iComprova (Token / MDF-e / CT-e)
+name: iComprova
 
 on:
-  repository_dispatch:
-    types: [ndd_token, send_mdfe, send_cte, send_both]
+  workflow_dispatch:
+    inputs:
+      action:
+        required: true
 
 jobs:
   run:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-
-      - name: Instalar jq
-        run: sudo apt-get update && sudo apt-get install -y jq
-
-      - name: Preparar pastas
-        run: |
-          mkdir -p responses
-          mkdir -p requests
+      - run: sudo apt-get update && sudo apt-get install -y jq
 
       - name: Executar
         env:
           CLIENT_ID: ${{ secrets.CLIENT_ID }}
           CLIENT_SECRET: ${{ secrets.CLIENT_SECRET }}
-          TOKEN_URL: "https://icomprova.nddcargo.com.br:9051/connect/token"
-          API_BASE: "https://polaris-dev.nddcargo.com.br:9553/api"
-          ACTION_TYPE: ${{ github.event.action }}
+          ACTION: ${{ github.event.inputs.action }}
         run: |
-          set -e
+          mkdir -p responses
+          echo '{"logs":[]}' > responses/result.json
 
-          now_iso() { date -u +"%Y-%m-%dT%H:%M:%SZ"; }
+          echo "Gerando token..." >> responses/result.json
 
-          LOG_JSON="responses/result.json"
-          TMP_DIR="$(mktemp -d)"
-
-          step_log() {
-            local msg="$1"
-            jq -c --arg t "$(now_iso)" --arg m "$msg" '.logs += [{"ts":$t,"msg":$m}]' "$LOG_JSON" > "$TMP_DIR/_log.json" && mv "$TMP_DIR/_log.json" "$LOG_JSON"
-          }
-
-          init_json() {
-            cat > "$LOG_JSON" <<'JSON'
-          {
-            "meta": {
-              "status": "running",
-              "action": "",
-              "started_at": "",
-              "finished_at": null
-            },
-            "token": {
-              "masked": null,
-              "expires_in": null
-            },
-            "mdfe": {
-              "http_status": null,
-              "body": null
-            },
-            "cte": {
-              "http_status": null,
-              "body": null
-            },
-            "logs": []
-          }
-JSON
-          }
-
-          mask_token() {
-            local tok="$1"
-            if [ -z "$tok" ] || [ "$tok" = "null" ]; then
-              echo ""
-              return
-            fi
-            local n=${#tok}
-            if [ $n -le 12 ]; then
-              echo "****"
-              return
-            fi
-            local head="${tok:0:6}"
-            local tail="${tok: -6}"
-            echo "${head}****${tail}"
-          }
-
-          curl_json_post_capture() {
-            # args: url, bearer_token(optional), json_file, out_body_file
-            local url="$1"
-            local bearer="$2"
-            local payload_file="$3"
-            local out_body="$4"
-
-            if [ -n "$bearer" ]; then
-              curl -sS -o "$out_body" -w "%{http_code}" \
-                -X POST "$url" \
-                -H "Authorization: Bearer $bearer" \
-                -H "Content-Type: application/json" \
-                --data-binary "@$payload_file"
-            else
-              curl -sS -o "$out_body" -w "%{http_code}" \
-                -X POST "$url" \
-                -H "Content-Type: application/json" \
-                --data-binary "@$payload_file"
-            fi
-          }
-
-          init_json
-
-          jq --arg a "$ACTION_TYPE" --arg s "$(now_iso)" '.meta.action=$a | .meta.started_at=$s' "$LOG_JSON" > "$TMP_DIR/_m.json" && mv "$TMP_DIR/_m.json" "$LOG_JSON"
-          step_log "Iniciando action: $ACTION_TYPE"
-
-          # ====== GERAR TOKEN NDD ======
-          step_log "Gerando token NDD..."
-          curl -sS -X POST "$TOKEN_URL" \
+          TOKEN=$(curl -s -X POST https://icomprova.nddcargo.com.br:9051/connect/token \
             -H "Content-Type: application/x-www-form-urlencoded" \
             -d "client_id=$CLIENT_ID" \
             -d "client_secret=$CLIENT_SECRET" \
             -d "grant_type=client_credentials" \
-            -d "scope=i-comprova-entregas-integration-api" \
-            > "$TMP_DIR/token.json"
+            -d "scope=i-comprova-entregas-integration-api" | jq -r .access_token)
 
-          ACCESS_TOKEN="$(jq -r '.access_token // empty' "$TMP_DIR/token.json")"
-          EXPIRES_IN="$(jq -r '.expires_in // empty' "$TMP_DIR/token.json")"
+          echo "{\"token\":\"$TOKEN\"}" > responses/result.json
 
-          if [ -z "$ACCESS_TOKEN" ]; then
-            step_log "Falha ao obter token (access_token vazio)."
-            jq --arg b "$(cat "$TMP_DIR/token.json")" '.token.masked=null | .token.expires_in=null | .meta.status="error" | .logs += [{"ts":"'"$(now_iso)"'","msg":"Resposta token: " + $b}]' \
-              "$LOG_JSON" > "$TMP_DIR/_e.json" && mv "$TMP_DIR/_e.json" "$LOG_JSON"
+          if [ "$ACTION" = "send_mdfe" ] || [ "$ACTION" = "send_both" ]; then
+            curl -s -X POST https://polaris-dev.nddcargo.com.br:9553/api/recepcoes/mdfe \
+              -H "Authorization: Bearer $TOKEN" \
+              -H "Content-Type: application/json" \
+              -d @requests/mdfe.json >> responses/result.json
+          fi
 
-            jq --arg f "$(now_iso)" '.meta.finished_at=$f' "$LOG_JSON" > "$TMP_DIR/_f.json" && mv "$TMP_DIR/_f.json" "$LOG_JS
+          if [ "$ACTION" = "send_cte" ] || [ "$ACTION" = "send_both" ]; then
+            curl -s -X POST https://polaris-dev.nddcargo.com.br:9553/api/recepcoes/cte \
+              -H "Authorization: Bearer $TOKEN" \
+              -H "Content-Type: application/json" \
+              -d @requests/cte.json >> responses/result.json
+          fi
+
+      - run: |
+          git config user.name github-actions
+          git config user.email actions@github.com
+          git add responses/result.json
+          git commit -m "resultado"
+          git push
