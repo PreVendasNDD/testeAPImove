@@ -1,53 +1,47 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-  <meta charset="UTF-8">
-  <title>Teste iComprova</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <style>
-    body { background:#111; color:#fff; font-family:Arial; padding:30px }
-    textarea { width:100%; height:200px; margin:10px 0 }
-    button { padding:10px 18px; margin:5px 0; cursor:pointer }
-    pre { background:#000; padding:15px; white-space:pre-wrap }
-    h2 { color:#4fc3f7 }
-  </style>
+<meta charset="UTF-8">
+<title>iComprova GitHub</title>
 </head>
-<body>
+<body style="background:#111;color:#fff;font-family:Arial;padding:30px">
 
-<h2>iComprova – Teste Oficial</h2>
+<h2>Enviar MDF-e (GitHub Only)</h2>
 
-<h3>MDF-e</h3>
-<textarea id="xmlMDFe" placeholder="Cole o XML do MDF-e"></textarea>
-<button onclick="enviarMDFe()">Enviar MDF-e</button>
-<pre id="outMDFe"></pre>
+<textarea id="xml" style="width:100%;height:200px"></textarea><br>
+<button onclick="enviar()">Enviar</button>
 
-<h3>CT-e</h3>
-<textarea id="xmlCTe" placeholder="Cole o XML do CT-e"></textarea>
-<input id="tokenViagem" placeholder="Token da viagem (se existir)">
-<button onclick="enviarCTe()">Enviar CT-e</button>
-<pre id="outCTe"></pre>
+<pre id="out"></pre>
 
 <script>
-async function enviarMDFe() {
-  const xml = document.getElementById("xmlMDFe").value;
-  const r = await fetch("http://localhost:3000/mdfe", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ documento: xml })
-  });
-  document.getElementById("outMDFe").textContent = await r.text();
+async function enviar(){
+  const xml = document.getElementById("xml").value;
+
+  await fetch(
+    "https://api.github.com/repos/SEU_USUARIO/SEU_REPO/dispatches",
+    {
+      method: "POST",
+      headers: {
+        "Authorization": "token SEU_GITHUB_TOKEN",
+        "Accept": "application/vnd.github+json"
+      },
+      body: JSON.stringify({
+        event_type: "workflow_dispatch",
+        client_payload: {}
+      })
+    }
+  );
+
+  document.getElementById("out").textContent =
+    "Enviado. Aguarde ~20s e atualize para ver o resultado.";
 }
 
-async function enviarCTe() {
-  const xml = document.getElementById("xmlCTe").value;
-  const token = document.getElementById("tokenViagem").value;
-  const r = await fetch("http://localhost:3000/cte", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ documento: xml, token })
-  });
-  document.getElementById("outCTe").textContent = await r.text();
+async function ler(){
+  const r = await fetch("responses/result.json?"+Date.now());
+  document.getElementById("out").textContent = await r.text();
 }
+
+setInterval(ler, 5000);
 </script>
 
 </body>
