@@ -118,3 +118,10 @@ JSON
 
           ACCESS_TOKEN="$(jq -r '.access_token // empty' "$TMP_DIR/token.json")"
           EXPIRES_IN="$(jq -r '.expires_in // empty' "$TMP_DIR/token.json")"
+
+          if [ -z "$ACCESS_TOKEN" ]; then
+            step_log "Falha ao obter token (access_token vazio)."
+            jq --arg b "$(cat "$TMP_DIR/token.json")" '.token.masked=null | .token.expires_in=null | .meta.status="error" | .logs += [{"ts":"'"$(now_iso)"'","msg":"Resposta token: " + $b}]' \
+              "$LOG_JSON" > "$TMP_DIR/_e.json" && mv "$TMP_DIR/_e.json" "$LOG_JSON"
+
+            jq --arg f "$(now_iso)" '.meta.finished_at=$f' "$LOG_JSON" > "$TMP_DIR/_f.json" && mv "$TMP_DIR/_f.json" "$LOG_JS
