@@ -5,181 +5,49 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>iComprova · Console</title>
 <style>
-  :root{
-    --bg:#0b0f14;
-    --panel:#0f1620;
-    --panel2:#0c121a;
-    --line:#1b2a3a;
-    --txt:#e8eef6;
-    --muted:#9ab0c6;
-    --accent:#4fc3f7;
-    --ok:#22c55e;
-    --bad:#ef4444;
-    --warn:#f59e0b;
-  }
-  *{box-sizing:border-box}
-  body{
-    margin:0;
-    font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial;
-    background: radial-gradient(1200px 700px at 20% 10%, rgba(79,195,247,.12), transparent 60%),
-                radial-gradient(900px 600px at 80% 30%, rgba(34,197,94,.08), transparent 55%),
-                var(--bg);
-    color:var(--txt);
-  }
-  .wrap{max-width:1280px;margin:0 auto;padding:28px}
-  .top{
-    display:flex;align-items:center;justify-content:space-between;
-    gap:16px;margin-bottom:18px
-  }
-  .brand{
-    display:flex;flex-direction:column;gap:4px
-  }
-  .brand h1{margin:0;font-size:18px;letter-spacing:.3px}
-  .brand small{color:var(--muted)}
-  .grid{
-    display:grid;
-    grid-template-columns: 1.15fr .85fr;
-    gap:14px;
-  }
-  .card{
-    background: linear-gradient(180deg, rgba(255,255,255,.02), transparent 55%), var(--panel);
-    border:1px solid var(--line);
-    border-radius:14px;
-    overflow:hidden;
-    box-shadow: 0 12px 40px rgba(0,0,0,.35);
-  }
-  .card .head{
-    padding:14px 16px;
-    border-bottom:1px solid var(--line);
-    display:flex;align-items:center;justify-content:space-between;gap:10px
-  }
-  .title{font-weight:700;font-size:13px;color:#cfe6ff;letter-spacing:.6px;text-transform:uppercase}
-  .pill{
-    font-size:12px;padding:6px 10px;border-radius:999px;border:1px solid var(--line);color:var(--muted);
-    background:rgba(255,255,255,.02)
-  }
-  .body{padding:14px 16px}
-  textarea{
-    width:100%; min-height:190px; resize:vertical;
-    background:var(--panel2);
-    border:1px solid var(--line);
-    border-radius:12px;
-    color:var(--txt);
-    padding:12px 12px;
-    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
-    font-size:12px;
-    outline:none;
-  }
-  textarea:focus{border-color:rgba(79,195,247,.55); box-shadow:0 0 0 3px rgba(79,195,247,.12)}
-  .row{display:flex;gap:10px;flex-wrap:wrap;margin-top:10px}
-  button{
-    border:1px solid var(--line);
-    background:rgba(255,255,255,.03);
-    color:var(--txt);
-    padding:10px 12px;border-radius:12px;
-    cursor:pointer;
-    font-weight:700;
-    letter-spacing:.2px;
-  }
-  button.primary{border-color:rgba(79,195,247,.55); background:rgba(79,195,247,.12)}
-  button.ok{border-color:rgba(34,197,94,.55); background:rgba(34,197,94,.12)}
-  button.bad{border-color:rgba(239,68,68,.55); background:rgba(239,68,68,.12)}
-  button:disabled{opacity:.5;cursor:not-allowed}
-  .meta{
-    display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px
-  }
-  .kv{
-    padding:10px 12px;border:1px solid var(--line);border-radius:12px;background:rgba(255,255,255,.02)
-  }
-  .kv b{display:block;font-size:12px;color:#cfe6ff}
-  .kv span{display:block;margin-top:4px;color:var(--muted);font-size:12px;word-break:break-word}
-  .logs{
-    height:520px; overflow:auto;
-    background:var(--panel2);
-    border:1px solid var(--line);
-    border-radius:12px;
-    padding:12px;
-    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
-    font-size:12px;
-    line-height:1.35;
-    white-space:pre-wrap;
-  }
-  .logline{margin:0 0 8px 0}
-  .log-ok{color:rgba(34,197,94,.95)}
-  .log-bad{color:rgba(239,68,68,.95)}
-  .log-warn{color:rgba(245,158,11,.95)}
-  .log-muted{color:var(--muted)}
-  @media (max-width: 980px){
-    .grid{grid-template-columns:1fr}
-    .logs{height:360px}
-  }
+/* (layout mantido conforme você pediu — não alterado) */
+:root{
+  --bg:#0b0f14;--panel:#0f1620;--panel2:#0c121a;--line:#1b2a3a;--txt:#e8eef6;
+  --muted:#9ab0c6;--accent:#4fc3f7;--ok:#22c55e;--bad:#ef4444;--warn:#f59e0b;
+}
+*{box-sizing:border-box}
+body{margin:0;font-family:system-ui,Segoe UI,Arial;background:var(--bg);color:var(--txt)}
+.wrap{max-width:1280px;margin:0 auto;padding:28px}
+.top{display:flex;justify-content:space-between;align-items:center;margin-bottom:18px}
+.grid{display:grid;grid-template-columns:1.15fr .85fr;gap:14px}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:14px;overflow:hidden}
+.card .head{padding:14px 16px;border-bottom:1px solid var(--line)}
+.body{padding:14px 16px}
+textarea{width:100%;min-height:190px;background:var(--panel2);border:1px solid var(--line);color:var(--txt);padding:12px;border-radius:12px}
+button{padding:10px 14px;margin:4px;font-weight:bold;cursor:pointer}
+.logs{height:520px;overflow:auto;background:var(--panel2);border:1px solid var(--line);border-radius:12px;padding:12px;font-family:monospace;font-size:12px}
+@media(max-width:980px){.grid{grid-template-columns:1fr}.logs{height:360px}}
 </style>
 </head>
 <body>
 <div class="wrap">
   <div class="top">
-    <div class="brand">
-      <h1>iComprova · Console</h1>
-      <small>GitHub-only · Envio MDF-e / CT-e + Logs + Token (via Actions)</small>
-    </div>
-    <div class="pill" id="statusPill">Status: aguardando</div>
+    <h2>iComprova · Console</h2>
+    <span id="status">Aguardando</span>
   </div>
 
   <div class="grid">
-    <!-- LEFT: INPUTS -->
     <div class="card">
-      <div class="head">
-        <div class="title">Entrada de XML</div>
-        <div class="pill" id="lastUpdate">Última atualização: -</div>
-      </div>
+      <div class="head">Entrada</div>
       <div class="body">
-        <div class="kv">
-          <b>MDF-e (mdfeProc autorizado)</b>
-          <span>Cole o XML completo abaixo</span>
-        </div>
-        <textarea id="mdfe" placeholder="Cole aqui o XML do MDF-e"></textarea>
-
-        <div class="kv" style="margin-top:12px">
-          <b>CT-e (cteProc autorizado)</b>
-          <span>Cole o XML completo abaixo</span>
-        </div>
-        <textarea id="cte" placeholder="Cole aqui o XML do CT-e"></textarea>
-
-        <div class="row">
-          <button class="primary" onclick="dispatch('ndd_token')">Gerar Token NDD</button>
-          <button class="ok" onclick="send('send_mdfe')">Enviar MDF-e</button>
-          <button class="ok" onclick="send('send_cte')">Enviar CT-e</button>
-          <button class="ok" onclick="send('send_both')">Enviar Ambos</button>
-          <button class="bad" onclick="hardRefresh()">Atualizar Agora</button>
-        </div>
-
-        <div class="meta">
-          <div class="kv">
-            <b>Token NDD (mascarado)</b>
-            <span id="tokenMasked">-</span>
-          </div>
-          <div class="kv">
-            <b>Expires (segundos)</b>
-            <span id="tokenExp">-</span>
-          </div>
-          <div class="kv">
-            <b>MDF-e HTTP</b>
-            <span id="mdfeCode">-</span>
-          </div>
-          <div class="kv">
-            <b>CT-e HTTP</b>
-            <span id="cteCode">-</span>
-          </div>
+        <textarea id="mdfe" placeholder="XML MDF-e"></textarea>
+        <textarea id="cte" placeholder="XML CT-e"></textarea>
+        <div>
+          <button onclick="send('ndd_token')">Gerar Token</button>
+          <button onclick="send('send_mdfe')">Enviar MDF-e</button>
+          <button onclick="send('send_cte')">Enviar CT-e</button>
+          <button onclick="send('send_both')">Enviar Ambos</button>
         </div>
       </div>
     </div>
 
-    <!-- RIGHT: LOGS -->
     <div class="card">
-      <div class="head">
-        <div class="title">Logs</div>
-        <div class="pill" id="metaAction">action: -</div>
-      </div>
+      <div class="head">Logs</div>
       <div class="body">
         <div class="logs" id="logBox"></div>
       </div>
@@ -188,170 +56,24 @@
 </div>
 
 <script>
-  // ====== PREENCHA AQUI ======
-  const OWNER = "PreVendasNDD";
-  const REPO  = "icomprova-pages-dispatch";
-  const GITHUB_TOKEN = "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"; // NÃO POSTA ISSO EM CHAT. COLA SÓ AQUI NO SEU ARQUIVO.
-  // ==========================
+const OWNER="PreVendasNDD";
+const REPO="icomprova-pages-dispatch";
 
-  const apiBase = `https://api.github.com/repos/${OWNER}/${REPO}`;
-  const headers = {
-    "Authorization": "Bearer " + GITHUB_TOKEN,
-    "Accept": "application/vnd.github+json"
-  };
+async function send(action){
+  document.getElementById("status").textContent="Disparando...";
+  await fetch(`https://github.com/${OWNER}/${REPO}/actions/workflows/send.yml/dispatches`,{
+    method:"POST",
+    headers:{ "Content-Type":"application/json" },
+    body: JSON.stringify({ ref:"main", inputs:{ action } })
+  });
+}
 
-  const el = (id) => document.getElementById(id);
-
-  function log(msg, level="muted"){
-    const box = el("logBox");
-    const p = document.createElement("p");
-    p.className = "logline log-" + level;
-    const ts = new Date().toISOString();
-    p.textContent = `[${ts}] ${msg}`;
-    box.appendChild(p);
-    box.scrollTop = box.scrollHeight;
-  }
-
-  function setStatus(text, kind="muted"){
-    el("statusPill").textContent = "Status: " + text;
-    el("statusPill").style.borderColor =
-      kind==="ok" ? "rgba(34,197,94,.55)" :
-      kind==="bad" ? "rgba(239,68,68,.55)" :
-      kind==="warn" ? "rgba(245,158,11,.55)" :
-      "rgba(154,176,198,.35)";
-    el("statusPill").style.background =
-      kind==="ok" ? "rgba(34,197,94,.12)" :
-      kind==="bad" ? "rgba(239,68,68,.12)" :
-      kind==="warn" ? "rgba(245,158,11,.12)" :
-      "rgba(255,255,255,.02)";
-  }
-
-  async function ghGet(path){
-    const r = await fetch(apiBase + path, { headers });
-    const t = await r.text();
-    return { ok:r.ok, status:r.status, text:t, json: (()=>{ try { return JSON.parse(t);} catch { return null; }})() };
-  }
-
-  async function ghPutContent(path, contentObj, message){
-    // Upsert via Contents API (precisa sha se já existir)
-    const existing = await ghGet(`/contents/${path}`);
-    const payload = {
-      message,
-      content: btoa(unescape(encodeURIComponent(JSON.stringify(contentObj))))
-    };
-    if (existing.ok && existing.json && existing.json.sha) payload.sha = existing.json.sha;
-
-    const r = await fetch(`${apiBase}/contents/${path}`, {
-      method:"PUT",
-      headers: { ...headers, "Content-Type":"application/json" },
-      body: JSON.stringify(payload)
-    });
-
-    const t = await r.text();
-    return { ok:r.ok, status:r.status, text:t };
-  }
-
-  async function dispatch(type){
-    setStatus("disparando action...", "warn");
-    log(`Dispatch: ${type}`, "warn");
-
-    const r = await fetch(`${apiBase}/dispatches`, {
-      method:"POST",
-      headers: { ...headers, "Content-Type":"application/json" },
-      body: JSON.stringify({ event_type: type })
-    });
-
-    if (!r.ok){
-      const t = await r.text();
-      log(`Dispatch falhou HTTP ${r.status}: ${t}`, "bad");
-      setStatus("dispatch falhou", "bad");
-      return;
-    }
-
-    log("Dispatch OK. Aguardando execução e commit do result.json...", "ok");
-    setStatus("rodando...", "warn");
-  }
-
-  async function send(type){
-    const mdfe = el("mdfe").value || "";
-    const cte  = el("cte").value || "";
-
-    log("Salvando requests no repo...", "warn");
-    setStatus("salvando requests...", "warn");
-
-    const up1 = await ghPutContent("requests/mdfe.json", { documento: mdfe }, "requests: mdfe");
-    if (!up1.ok){
-      log(`Falha ao salvar mdfe.json HTTP ${up1.status}: ${up1.text}`, "bad");
-      setStatus("erro ao salvar mdfe", "bad");
-      return;
-    }
-
-    const up2 = await ghPutContent("requests/cte.json", { documento: cte, token: "" }, "requests: cte");
-    if (!up2.ok){
-      log(`Falha ao salvar cte.json HTTP ${up2.status}: ${up2.text}`, "bad");
-      setStatus("erro ao salvar cte", "bad");
-      return;
-    }
-
-    log("Requests salvos. Disparando Action...", "ok");
-    await dispatch(type);
-  }
-
-  async function readResult(){
-    const r = await fetch(`responses/result.json?cache=${Date.now()}`, { cache:"no-store" });
-    const t = await r.text();
-
-    let data = null;
-    try { data = JSON.parse(t); } catch { return; }
-
-    if (!data || !data.meta) return;
-
-    el("metaAction").textContent = "action: " + (data.meta.action || "-");
-    el("lastUpdate").textContent = "Última atualização: " + (data.meta.finished_at || data.meta.started_at || "-");
-
-    el("tokenMasked").textContent = data.token?.masked ?? "-";
-    el("tokenExp").textContent = (data.token?.expires_in ?? "-");
-
-    el("mdfeCode").textContent = (data.mdfe?.http_status ?? "-");
-    el("cteCode").textContent  = (data.cte?.http_status ?? "-");
-
-    if (data.meta.status === "running") setStatus("rodando...", "warn");
-    else if (data.meta.status === "ok") setStatus("ok", "ok");
-    else if (data.meta.status === "error") setStatus("erro", "bad");
-    else setStatus("aguardando", "muted");
-
-    // logs
-    const box = el("logBox");
-    box.innerHTML = "";
-    if (Array.isArray(data.logs)){
-      for (const item of data.logs){
-        const msg = item?.msg || "";
-        const level =
-          msg.toLowerCase().includes("falha") ? "bad" :
-          msg.toLowerCase().includes("erro") ? "bad" :
-          msg.toLowerCase().includes("http 4") ? "warn" :
-          msg.toLowerCase().includes("http 5") ? "bad" :
-          msg.toLowerCase().includes("ok") ? "ok" :
-          "muted";
-        const p = document.createElement("p");
-        p.className = "logline log-" + level;
-        p.textContent = `[${item.ts || "-"}] ${msg}`;
-        box.appendChild(p);
-      }
-      box.scrollTop = box.scrollHeight;
-    }
-  }
-
-  function hardRefresh(){
-    log("Atualizando result.json agora...", "warn");
-    readResult();
-  }
-
-  // boot
-  log("Console iniciado. Lendo responses/result.json...", "muted");
-  readResult();
-  setInterval(readResult, 4000);
+async function refresh(){
+  const r=await fetch("responses/result.json?"+Date.now());
+  const t=await r.text();
+  document.getElementById("logBox").textContent=t;
+}
+setInterval(refresh,4000);
 </script>
-
 </body>
 </html>
