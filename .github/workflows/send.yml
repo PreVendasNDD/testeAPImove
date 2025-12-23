@@ -20,36 +20,63 @@ jobs:
           ACTION: ${{ github.event.inputs.action }}
         run: |
           mkdir -p responses
-          echo '{"logs":[]}' > responses/result.json
 
-          echo "Gerando token..." >> responses/result.json
+          echo '{
+            "meta": { "status": "running", "action": "'"$ACTION"'" },
+            "token": null,
+            "mdfe": null,
+            "cte": null,
+            "logs": []
+          }' > responses/result.json
 
-          TOKEN=$(curl -s -X POST https://icomprova.nddcargo.com.br:9051/connect/token \
+          log () {
+            jq --arg m "$1" '.logs += [$m]' responses/result.json > tmp.json && mv tmp.json responses/result.json
+          }
+
+          log "Gerando token..."
+
+          TOKEN_RESP=$(curl -s -X POST https://icomprova.nddcargo.com.br:9051/connect/token \
             -H "Content-Type: application/x-www-form-urlencoded" \
             -d "client_id=$CLIENT_ID" \
             -d "client_secret=$CLIENT_SECRET" \
             -d "grant_type=client_credentials" \
-            -d "scope=i-comprova-entregas-integration-api" | jq -r .access_token)
+            -d "scope=i-comprova-entregas-integration-api")
 
-          echo "{\"token\":\"$TOKEN\"}" > responses/result.json
+          TOKEN=$(echo "$TOKEN_RESP" | jq -r .access_token)
+          EXPIRES=$(echo "$TOKEN_RESP" | jq -r .expires_in)
+
+          if [ "$TOKEN" = "null" ] || [ -z "$TOKEN" ]; then
+            log "Falha ao gerar token"
+            log "$TOKEN_RESP"
+          else
+            log "Token OK"
+            jq --arg t "$TOKEN" --arg e "$EXPIRES" '.token={masked:($t|.[:6]+"****"+.[-6:]),expires_in:($e|tonumber)}' responses/result.json > tmp.json && mv tmp.json responses/result.json
+          fi
 
           if [ "$ACTION" = "send_mdfe" ] || [ "$ACTION" = "send_both" ]; then
-            curl -s -X POST https://polaris-dev.nddcargo.com.br:9553/api/recepcoes/mdfe \
+            log "Enviando MDF-e"
+            MDFE=$(curl -s -X POST https://polaris-dev.nddcargo.com.br:9553/api/recepcoes/mdfe \
               -H "Authorization: Bearer $TOKEN" \
               -H "Content-Type: application/json" \
-              -d @requests/mdfe.json >> responses/result.json
+              -d @requests/mdfe.json)
+            jq --arg m "$MDFE" '.mdfe=$m' responses/result.json > tmp.json && mv tmp.json responses/result.json
           fi
 
           if [ "$ACTION" = "send_cte" ] || [ "$ACTION" = "send_both" ]; then
-            curl -s -X POST https://polaris-dev.nddcargo.com.br:9553/api/recepcoes/cte \
+            log "Enviando CT-e"
+            CTE=$(curl -s -X POST https://polaris-dev.nddcargo.com.br:9553/api/recepcoes/cte \
               -H "Authorization: Bearer $TOKEN" \
               -H "Content-Type: application/json" \
-              -d @requests/cte.json >> responses/result.json
+              -d @requests/cte.json)
+            jq --arg c "$CTE" '.cte=$c' responses/result.json > tmp.json && mv tmp.json responses/result.json
           fi
 
-      - run: |
+          jq '.meta.status="ok"' responses/result.json > tmp.json && mv tmp.json responses/result.json
+
+      - name: Commitar
+        run: |
           git config user.name github-actions
           git config user.email actions@github.com
           git add responses/result.json
-          git commit -m "resultado"
+          git commit -m "iComprova resultado" || true
           git push
