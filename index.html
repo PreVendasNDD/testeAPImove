@@ -60,18 +60,23 @@ const OWNER="PreVendasNDD";
 const REPO="icomprova-pages-dispatch";
 
 async function send(action){
-  const mdfe=document.getElementById("mdfe").value;
-  const cte=document.getElementById("cte").value;
+  const mdfe = document.getElementById("mdfe").value;
+  const cte  = document.getElementById("cte").value;
 
-  await fetch(`https://api.github.com/repos/${OWNER}/${REPO}/issues`,{
-    method:"POST",
-    headers:{ "Content-Type":"application/json" },
+  await fetch(`https://api.github.com/repos/${OWNER}/${REPO}/issues`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "Accept": "application/vnd.github+json",
+      "User-Agent": "iComprova"
+    },
     body: JSON.stringify({
-      title:"icomprova",
+      title: "icomprova",
       body: JSON.stringify({ action, mdfe, cte })
     })
   });
 }
+
 </script>
 
 </body>
