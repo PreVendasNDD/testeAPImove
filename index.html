@@ -1,162 +1,89 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-  <title>Teste Final iComprova v2</title>
+  <meta charset="UTF-8">
+  <title>Teste Token iComprova</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <style>
-    body { font-family: Arial; padding: 20px; background: #111; color: white; }
-    textarea { width: 100%; height: 150px; margin: 10px 0; background: #222; color: white; }
-    button { padding: 10px 20px; margin: 5px; background: #007bff; color: white; border: none; cursor: pointer; }
-    button#btnCTe { background: #28a745; }
-    pre { background: #222; padding: 15px; border-radius: 5px; overflow-x: auto; margin-top: 10px; }
-    .step { background: #1a1a1a; padding: 15px; margin: 15px 0; border-left: 4px solid #007bff; }
-    .success { border-left-color: #28a745 !important; }
-    .error { border-left-color: #dc3545 !important; }
+    body {
+      font-family: Arial, sans-serif;
+      background: #0e0e0e;
+      color: #ffffff;
+      padding: 30px;
+    }
+    button {
+      padding: 12px 20px;
+      font-size: 16px;
+      cursor: pointer;
+      background: #1e88e5;
+      color: #fff;
+      border: none;
+      border-radius: 4px;
+    }
+    pre {
+      margin-top: 20px;
+      background: #1c1c1c;
+      padding: 15px;
+      border-radius: 4px;
+      overflow-x: auto;
+    }
+    .error {
+      color: #ff5252;
+    }
   </style>
 </head>
 <body>
-  <h2>🚛 Teste Final Integração iComprova (API v2)</h2>
 
-  <!-- PASSO 1: Token -->
-  <div class="step">
-    <h3>1. Autenticação</h3>
-    <button onclick="getToken()">1. Obter Token</button>
-    <pre id="tokenResult">Status: Aguardando...</pre>
-  </div>
+  <h2>Teste de Token – iComprova / NDD Cargo</h2>
 
-  <!-- PASSO 2: MDF-e -->
-  <div class="step">
-    <h3>2. Enviar MDF-e (Viagem)</h3>
-    <p><strong>Cole o XML COMPLETO do MDF-e (tag &lt;mdfeProc&gt;):</strong></p>
-    <textarea id="mdfeXml" placeholder="Cole o XML do MDF-e aqui..."></textarea>
-    <button onclick="sendMDFe()">2. Enviar MDF-e</button>
-    <pre id="mdfeResult">Status: Aguardando envio do MDF-e...</pre>
-  </div>
+  <button onclick="obterToken()">Obter Token</button>
 
-  <!-- PASSO 3: CT-e -->
-  <div class="step">
-    <h3>3. Enviar CT-e (Entrega)</h3>
-    <p><strong>Cole o XML do CT-e vinculado ao MDF-e acima:</strong></p>
-    <textarea id="cteXml" placeholder="Cole o XML do CT-e aqui..."></textarea>
-    <p><small>Token da viagem (será preenchido automaticamente):</small></p>
-    <input type="text" id="viagemToken" style="width:100%; padding:8px; background:#333; color:white; border:1px solid #555;" readonly>
-    <button id="btnCTe" onclick="sendCTe()">3. Enviar CT-e</button>
-    <pre id="cteResult">Status: Aguardando envio do CT-e...</pre>
-  </div>
+  <pre id="resultado">Clique no botão para gerar o token...</pre>
 
-<script>
-let currentToken = '';
-let tokenViagem = '';
+  <script>
+    async function obterToken() {
+      const resultado = document.getElementById("resultado");
+      resultado.textContent = "Requisitando token...";
 
-// PASSO 1: Token
-async function getToken() {
-  const result = document.getElementById("tokenResult");
-  result.textContent = "Obtendo token...";
-  
-  try {
-    const response = await fetch("https://icomprova.nddcargo.com.br:9051/connect/token", {
-      method: "POST",
-      headers: { "Content-Type": "application/x-www-form-urlencoded" },
-      body: "client_id=4a3a17846e714b3288682c5260455347&client_secret=FFVkTyaM4zVsLYAhKpGIT57C72EzYPSOqFO+O/P9y0Y=&scope=i-comprova-entregas-integration-api&grant_type=client_credentials"
-    });
-    
-    const data = await response.json();
-    if (response.ok) {
-      currentToken = data.access_token;
-      result.textContent = `✅ TOKEN OBTIDO (Expira em: ${data.expires_in}s)\nToken: ${currentToken.substring(0, 50)}...`;
-      result.parentElement.classList.add('success');
-    } else {
-      result.textContent = `❌ ERRO ${response.status}: ${JSON.stringify(data)}`;
-      result.parentElement.classList.add('error');
-    }
-  } catch (error) {
-    result.textContent = "❌ ERRO de Rede: " + error.message;
-    result.parentElement.classList.add('error');
-  }
-}
+      const body = new URLSearchParams({
+        client_id: "4a3a17846e714b3288682c5260455347",
+        client_secret: "FFVkTyaM4zVsLYAhKpGIT57C72EzYPSOqFO+O/P9y0Y=",
+        scope: "i-comprova-entregas-integration-api",
+        grant_type: "client_credentials"
+      });
 
-// PASSO 2: MDF-e
-async function sendMDFe() {
-  const xml = document.getElementById("mdfeXml").value.trim();
-  if (!xml) { alert("❌ Cole o XML do MDF-e primeiro."); return; }
-  if (!currentToken) { alert("❌ Obtenha o token primeiro (Passo 1)."); return; }
-  
-  const result = document.getElementById("mdfeResult");
-  const stepDiv = result.parentElement;
-  result.textContent = "Enviando MDF-e para a API v2...";
-  
-  try {
-    const response = await fetch("https://icomprova.nddcargo.com.br:9051/api/v2/Recepcoes/MDFe", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "Authorization": `Bearer ${currentToken}`
-      },
-      body: JSON.stringify({ documento: xml })
-    });
-    
-    const data = await response.json();
-    result.textContent = `RESPOSTA DA API (Status ${response.status}):\n${JSON.stringify(data, null, 2)}`;
-    
-    if (response.ok && data.status === 'success') {
-      stepDiv.classList.add('success');
-      // Se a API retornar um token, guarda e preenche o campo
-      if (data.token) {
-        tokenViagem = data.token;
-        document.getElementById("viagemToken").value = data.token;
-      } else if (data.id) {
-        // Algumas APIs retornam um ID como referência
-        tokenViagem = data.id;
-        document.getElementById("viagemToken").value = `ID: ${data.id}`;
+      try {
+        const response = await fetch("https://icomprova.nddcargo.com.br:9051/connect/token", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/x-www-form-urlencoded"
+          },
+          body: body.toString()
+        });
+
+        const text = await response.text();
+
+        if (!response.ok) {
+          resultado.innerHTML = `<span class="error">Erro ${response.status}:</span>\n${text}`;
+          return;
+        }
+
+        const data = JSON.parse(text);
+
+        resultado.textContent =
+`ACCESS TOKEN:
+
+${data.access_token}
+
+-------------------------
+EXPIRES IN: ${data.expires_in}
+TYPE: ${data.token_type}
+SCOPE: ${data.scope}`;
+      } catch (err) {
+        resultado.innerHTML = `<span class="error">Erro de conexão:</span>\n${err.message}`;
       }
-    } else {
-      stepDiv.classList.add('error');
     }
-  } catch (error) {
-    result.textContent = "❌ ERRO de Rede: " + error.message;
-    stepDiv.classList.add('error');
-  }
-}
-
-// PASSO 3: CT-e
-async function sendCTe() {
-  const xml = document.getElementById("cteXml").value.trim();
-  if (!xml) { alert("❌ Cole o XML do CT-e primeiro."); return; }
-  if (!currentToken) { alert("❌ Obtenha o token primeiro (Passo 1)."); return; }
-  
-  const result = document.getElementById("cteResult");
-  const stepDiv = result.parentElement;
-  result.textContent = "Enviando CT-e para a API v2...";
-  
-  try {
-    const bodyData = { documento: xml };
-    // Usa o token da viagem se existir
-    if (tokenViagem) {
-      bodyData.token = tokenViagem;
-    }
-    
-    const response = await fetch("https://icomprova.nddcargo.com.br:9051/api/v2/Recepcoes/CTe", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "Authorization": `Bearer ${currentToken}`
-      },
-      body: JSON.stringify(bodyData)
-    });
-    
-    const data = await response.json();
-    result.textContent = `RESPOSTA DA API (Status ${response.status}):\n${JSON.stringify(data, null, 2)}`;
-    
-    if (response.ok && data.status === 'success') {
-      stepDiv.classList.add('success');
-    } else {
-      stepDiv.classList.add('error');
-    }
-  } catch (error) {
-    result.textContent = "❌ ERRO de Rede: " + error.message;
-    stepDiv.classList.add('error');
-  }
-}
-</script>
+  </script>
 
 </body>
 </html>
