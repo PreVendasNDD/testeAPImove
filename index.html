@@ -2,7 +2,7 @@
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8">
-  <title>Teste iComprova - MDF-e e CT-e</title>
+  <title>Teste Endpoints iComprova</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <style>
     body {
@@ -10,10 +10,6 @@
       background: #0e0e0e;
       color: #ffffff;
       padding: 30px;
-    }
-    h2 {
-      color: #1e88e5;
-      margin-top: 40px;
     }
     button {
       padding: 12px 20px;
@@ -25,31 +21,6 @@
       border-radius: 4px;
       margin: 10px 5px;
     }
-    button:nth-child(2) {
-      background: #43a047;
-    }
-    button:nth-child(3) {
-      background: #fb8c00;
-    }
-    textarea {
-      width: 100%;
-      height: 200px;
-      background: #1c1c1c;
-      color: #ffffff;
-      border: 1px solid #333;
-      padding: 10px;
-      margin: 10px 0;
-      font-family: monospace;
-      font-size: 14px;
-    }
-    input {
-      width: 100%;
-      padding: 10px;
-      background: #1c1c1c;
-      color: #ffffff;
-      border: 1px solid #333;
-      margin: 10px 0;
-    }
     pre {
       margin-top: 20px;
       background: #1c1c1c;
@@ -58,54 +29,20 @@
       overflow-x: auto;
       white-space: pre-wrap;
     }
-    .error {
-      color: #ff5252;
-    }
-    .success {
-      color: #4caf50;
-    }
+    .error { color: #ff5252; }
+    .success { color: #4caf50; }
   </style>
 </head>
 <body>
 
-  <h2>Teste iComprova - Documentos Fiscais</h2>
-
-  <!-- Passo 1: Token -->
-  <div>
-    <h3>1. Obter Token</h3>
-    <button onclick="obterToken()">Obter Token</button>
-    <pre id="tokenResult">Clique para gerar token...</pre>
-  </div>
-
-  <!-- Passo 2: MDF-e -->
-  <div>
-    <h3>2. Enviar MDF-e</h3>
-    <p>Cole o XML completo do MDF-e (tag &lt;mdfeProc&gt; autorizado):</p>
-    <textarea id="mdfeXml" placeholder="Cole o XML do MDF-e aqui..."></textarea>
-    <button onclick="enviarMDFe()">Enviar MDF-e</button>
-    <pre id="mdfeResult">Resultado do MDF-e aparecerá aqui...</pre>
-  </div>
-
-  <!-- Passo 3: CT-e -->
-  <div>
-    <h3>3. Enviar CT-e</h3>
-    <p>Cole o XML do CT-e:</p>
-    <textarea id="cteXml" placeholder="Cole o XML do CT-e aqui..."></textarea>
-    <p>Token da viagem (opcional - vem na resposta do MDF-e):</p>
-    <input type="text" id="viagemToken" placeholder="Token da viagem">
-    <button onclick="enviarCTe()">Enviar CT-e</button>
-    <pre id="cteResult">Resultado do CT-e aparecerá aqui...</pre>
-  </div>
+  <h2>Teste de Endpoints iComprova</h2>
+  <button onclick="testarEndpoints()">Testar Todos os Endpoints</button>
+  <pre id="resultado">Clique para testar endpoints...</pre>
 
   <script>
     let accessToken = '';
-    let mdfeResponseToken = '';
 
-    // 1. Obter Token (igual ao seu código original)
     async function obterToken() {
-      const resultado = document.getElementById("tokenResult");
-      resultado.textContent = "Requisitando token...";
-
       const body = new URLSearchParams({
         client_id: "4a3a17846e714b3288682c5260455347",
         client_secret: "FFVkTyaM4zVsLYAhKpGIT57C72EzYPSOqFO+O/P9y0Y=",
@@ -113,130 +50,112 @@
         grant_type: "client_credentials"
       });
 
-      try {
-        const response = await fetch("https://icomprova.nddcargo.com.br:9051/connect/token", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/x-www-form-urlencoded"
-          },
-          body: body.toString()
-        });
+      const response = await fetch("https://icomprova.nddcargo.com.br:9051/connect/token", {
+        method: "POST",
+        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        body: body.toString()
+      });
 
-        const text = await response.text();
-
-        if (!response.ok) {
-          resultado.innerHTML = `<span class="error">Erro ${response.status}:</span>\n${text}`;
-          return;
-        }
-
-        const data = JSON.parse(text);
+      const data = await response.json();
+      if (response.ok) {
         accessToken = data.access_token;
+        return true;
+      }
+      return false;
+    }
 
-        resultado.innerHTML = `<span class="success">✓ TOKEN OBTIDO:</span>\n\n${data.access_token}\n\nExpira em: ${data.expires_in}s`;
+    async function testarEndpoint(url, method = 'GET') {
+      try {
+        const response = await fetch(url, {
+          method: method,
+          headers: {
+            "Authorization": `Bearer ${accessToken}`,
+            "Content-Type": "application/json"
+          }
+        });
+        return { url, status: response.status, ok: response.ok };
       } catch (err) {
-        resultado.innerHTML = `<span class="error">Erro de conexão:</span>\n${err.message}`;
+        return { url, status: 'ERRO', ok: false, error: err.message };
       }
     }
 
-    // 2. Enviar MDF-e
-    async function enviarMDFe() {
-      const resultado = document.getElementById("mdfeResult");
-      resultado.textContent = "Enviando MDF-e...";
-
-      const xml = document.getElementById("mdfeXml").value.trim();
+    async function testarEndpoints() {
+      const resultado = document.getElementById("resultado");
+      resultado.textContent = "Testando endpoints...\n\n";
       
-      if (!xml) {
-        resultado.innerHTML = `<span class="error">Erro:</span> Cole o XML do MDF-e`;
+      // Primeiro pega token
+      resultado.textContent += "1. Obtendo token...\n";
+      const tokenOk = await obterToken();
+      
+      if (!tokenOk) {
+        resultado.textContent += "❌ Erro ao obter token\n";
         return;
       }
-
-      if (!accessToken) {
-        resultado.innerHTML = `<span class="error">Erro:</span> Primeiro obtenha o token`;
-        return;
-      }
-
-      try {
-        const response = await fetch("https://icomprova.nddcargo.com.br:9051/api/Recepcoes/MDFe", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "Authorization": `Bearer ${accessToken}`
-          },
-          body: JSON.stringify({
-            documento: xml
-          })
-        });
-
-        const text = await response.text();
-
-        if (!response.ok) {
-          resultado.innerHTML = `<span class="error">Erro ${response.status}:</span>\n${text}`;
-          return;
-        }
-
-        const data = JSON.parse(text);
+      
+      resultado.textContent += "✅ Token obtido\n\n";
+      resultado.textContent += "2. Testando endpoints...\n\n";
+      
+      // Testa diferentes padrões de URL
+      const endpoints = [
+        // Padrão 1: /api/Recepcoes/MDFe
+        "https://icomprova.nddcargo.com.br:9051/api/Recepcoes/MDFe",
+        "https://icomprova.nddcargo.com.br:9051/api/recepcoes/mdfe",
+        "https://icomprova.nddcargo.com.br:9051/api/MDFe",
+        "https://icomprova.nddcargo.com.br:9051/api/mdfe",
         
-        // Guardar token da viagem se existir
-        if (data.token) {
-          mdfeResponseToken = data.token;
-          document.getElementById("viagemToken").value = data.token;
-        }
-
-        resultado.innerHTML = `<span class="success">✓ MDF-e ENVIADO:</span>\n\n${JSON.stringify(data, null, 2)}`;
-      } catch (err) {
-        resultado.innerHTML = `<span class="error">Erro de conexão:</span>\n${err.message}`;
-      }
-    }
-
-    // 3. Enviar CT-e
-    async function enviarCTe() {
-      const resultado = document.getElementById("cteResult");
-      resultado.textContent = "Enviando CT-e...";
-
-      const xml = document.getElementById("cteXml").value.trim();
-      const tokenViagem = document.getElementById("viagemToken").value.trim();
+        // Padrão 2: /api/v1/...
+        "https://icomprova.nddcargo.com.br:9051/api/v1/Recepcoes/MDFe",
+        "https://icomprova.nddcargo.com.br:9051/api/v1/recepcoes/mdfe",
+        
+        // Padrão 3: /api/integracao/...
+        "https://icomprova.nddcargo.com.br:9051/api/integracao/mdfe",
+        "https://icomprova.nddcargo.com.br:9051/api/integracao/cte",
+        
+        // Padrão 4: Direto na raiz
+        "https://icomprova.nddcargo.com.br:9051/Recepcoes/MDFe",
+        "https://icomprova.nddcargo.com.br:9051/recepcoes/mdfe",
+        
+        // Padrão 5: Com diferente porta
+        "https://icomprova.nddcargo.com.br/api/Recepcoes/MDFe",
+        "https://icomprova.nddcargo.com.br/api/recepcoes/mdfe",
+      ];
       
-      if (!xml) {
-        resultado.innerHTML = `<span class="error">Erro:</span> Cole o XML do CT-e`;
-        return;
-      }
-
-      if (!accessToken) {
-        resultado.innerHTML = `<span class="error">Erro:</span> Primeiro obtenha o token`;
-        return;
-      }
-
-      try {
-        const bodyData = {
-          documento: xml
-        };
-
-        // Adicionar token da viagem se existir
-        if (tokenViagem) {
-          bodyData.token = tokenViagem;
+      for (let i = 0; i < endpoints.length; i++) {
+        const endpoint = endpoints[i];
+        resultado.textContent += `Testando: ${endpoint}\n`;
+        
+        const result = await testarEndpoint(endpoint, 'GET');
+        
+        if (result.ok) {
+          resultado.textContent += `✅ Status ${result.status} - ENDPOINT ENCONTRADO!\n\n`;
+          // Se encontrou um que funciona, testa os outros métodos
+          resultado.textContent += `Agora testando POST em: ${endpoint}\n`;
+          
+          try {
+            const postResponse = await fetch(endpoint, {
+              method: 'POST',
+              headers: {
+                "Authorization": `Bearer ${accessToken}`,
+                "Content-Type": "application/json"
+              },
+              body: JSON.stringify({ documento: "test" })
+            });
+            resultado.textContent += `POST: Status ${postResponse.status}\n`;
+          } catch (e) {
+            resultado.textContent += `POST Erro: ${e.message}\n`;
+          }
+          
+          resultado.textContent += "\n";
+          break;
+        } else {
+          resultado.textContent += `❌ Status ${result.status}\n`;
         }
-
-        const response = await fetch("https://icomprova.nddcargo.com.br:9051/api/Recepcoes/CTe", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "Authorization": `Bearer ${accessToken}`
-          },
-          body: JSON.stringify(bodyData)
-        });
-
-        const text = await response.text();
-
-        if (!response.ok) {
-          resultado.innerHTML = `<span class="error">Erro ${response.status}:</span>\n${text}`;
-          return;
-        }
-
-        const data = JSON.parse(text);
-        resultado.innerHTML = `<span class="success">✓ CT-e ENVIADO:</span>\n\n${JSON.stringify(data, null, 2)}`;
-      } catch (err) {
-        resultado.innerHTML = `<span class="error">Erro de conexão:</span>\n${err.message}`;
+        
+        // Pequena pausa entre requisições
+        await new Promise(resolve => setTimeout(resolve, 500));
       }
+      
+      resultado.textContent += "\n✅ Teste completo!";
     }
   </script>
 
