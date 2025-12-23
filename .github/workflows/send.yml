@@ -1,20 +1,69 @@
-log "Chamando NDD..."
+name: iComprova
 
-TOKEN_RESP=$(curl -s -k -X POST https://icomprova.nddcargo.com.br:9051/connect/token \
-  -H "Content-Type: application/x-www-form-urlencoded" \
-  -d "client_id=$CLIENT_ID" \
-  -d "client_secret=$CLIENT_SECRET" \
-  -d "grant_type=client_credentials" \
-  -d "scope=i-comprova-entregas-integration-api" || echo "CURL_ERROR")
+on:
+  issues:
+    types: [opened]
 
-log "Resposta NDD bruta:"
-log "$TOKEN_RESP"
+jobs:
+  run:
+    permissions:
+      contents: write
+      issues: write
 
-TOKEN=$(echo "$TOKEN_RESP" | jq -r '.access_token // empty')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: sudo apt-get update && sudo apt-get install -y jq
 
-if [ -z "$TOKEN" ]; then
-  log "NDD não retornou token"
-else
-  log "Token recebido"
-  jq --arg t "$TOKEN" '.token={masked:($t|.[:6]+"****"+.[-6:])}' responses/result.json > tmp.json && mv tmp.json responses/result.json
-fi
+      - name: Executar
+        env:
+          CLIENT_ID: ${{ secrets.CLIENT_ID }}
+          CLIENT_SECRET: ${{ secrets.CLIENT_SECRET }}
+          BODY: ${{ github.event.issue.body }}
+        run: |
+          mkdir -p responses
+
+          echo "$BODY" > payload.json
+          ACTION=$(jq -r .action payload.json)
+          MDFE=$(jq -r .mdfe payload.json)
+          CTE=$(jq -r .cte payload.json)
+
+          echo '{"logs":[]}' > responses/result.json
+
+          log() {
+            jq --arg m "$1" '.logs+=[ $m ]' responses/result.json > t && mv t responses/result.json
+          }
+
+          log "Gerando token"
+
+          TOKEN=$(curl -s https://icomprova.nddcargo.com.br:9051/connect/token \
+            -H "Content-Type: application/x-www-form-urlencoded" \
+            -d "client_id=$CLIENT_ID" \
+            -d "client_secret=$CLIENT_SECRET" \
+            -d "grant_type=client_credentials" \
+            -d "scope=i-comprova-entregas-integration-api" | jq -r .access_token)
+
+          log "Token OK"
+
+          if [ "$ACTION" = "send_mdfe" ] || [ "$ACTION" = "send_both" ]; then
+            log "Enviando MDF-e"
+            curl -s https://polaris-dev.nddcargo.com.br:9553/api/recepcoes/mdfe \
+              -H "Authorization: Bearer $TOKEN" \
+              -H "Content-Type: application/json" \
+              -d "{\"documento\":$MDFE}" >> responses/result.json
+          fi
+
+          if [ "$ACTION" = "send_cte" ] || [ "$ACTION" = "send_both" ]; then
+            log "Enviando CT-e"
+            curl -s https://polaris-dev.nddcargo.com.br:9553/api/recepcoes/cte \
+              -H "Authorization: Bearer $TOKEN" \
+              -H "Content-Type: application/json" \
+              -d "{\"documento\":$CTE}" >> responses/result.json
+          fi
+
+      - run: |
+          git config user.name github-actions
+          git config user.email actions@github.com
+          git add responses/result.json
+          git commit -m "iComprova"
+          git push
