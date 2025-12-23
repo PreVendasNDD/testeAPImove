@@ -50,6 +50,14 @@
       padding-left: 15px;
       margin: 25px 0;
     }
+    input[type="text"]{
+      width:100%;
+      padding:8px;
+      background:#1c1c1c;
+      color:white;
+      border:1px solid #333;
+      margin:5px 0;
+    }
   </style>
 </head>
 <body>
@@ -74,8 +82,8 @@
     <h3>3. Enviar CT-e (Entrega Vinculada)</h3>
     <p>Cole o XML do CT-e vinculado ao MDF-e acima:</p>
     <textarea id="xmlCTe" placeholder="Cole o XML do CT-e aqui..."></textarea>
-    <p>Token da viagem (será preenchido automaticamente se retornado pelo MDF-e):</p>
-    <input type="text" id="tokenViagem" style="width:100%; padding:8px; background:#1c1c1c; color:white; border:1px solid #333; margin:5px 0;">
+    <p>Token da viagem:</p>
+    <input type="text" id="tokenViagem">
     <button class="enviar" onclick="enviarCTe()">Enviar CT-e</button>
     <pre id="resultadoCTe">Resultado do CT-e aparecerá aqui...</pre>
   </div>
@@ -91,18 +99,21 @@
       const body = new URLSearchParams({
         client_id: "4a3a17846e714b3288682c5260455347",
         client_secret: "FFVkTyaM4zVsLYAhKpGIT57C72EzYPSOqFO+O/P9y0Y=",
-        scope: "i-comprova-entregas-integration-api",
-        grant_type: "client_credentials"
+        grant_type: "client_credentials",
+        scope: "i-comprova-entregas-integration-api"
       });
 
       try {
-        const response = await fetch("https://hmg-icomprova.nddcargo.com.br:9003/api/v2/recepcoes/mdfe", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/x-www-form-urlencoded"
-          },
-          body: body.toString()
-        });
+        const response = await fetch(
+          "https://icomprova.nddcargo.com.br:9051/connect/token",
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/x-www-form-urlencoded"
+            },
+            body: body.toString()
+          }
+        );
 
         const text = await response.text();
 
@@ -114,7 +125,8 @@
         const data = JSON.parse(text);
         accessToken = data.access_token;
 
-        resultado.innerHTML = `<span class="success">✅ TOKEN OBTIDO</span>\n\nToken: ${data.access_token}\n\nExpira em: ${data.expires_in} segundos`;
+        resultado.innerHTML =
+          `<span class="success">TOKEN OBTIDO</span>\n\n${data.access_token}\n\nExpira em: ${data.expires_in} segundos`;
       } catch (err) {
         resultado.innerHTML = `<span class="error">Erro de conexão:</span>\n${err.message}`;
       }
@@ -125,29 +137,27 @@
       resultado.textContent = "Enviando MDF-e...";
 
       const xml = document.getElementById("xmlMDFe").value.trim();
-      
       if (!xml) {
-        resultado.innerHTML = `<span class="error">Erro:</span> Cole o XML do MDF-e primeiro.`;
+        resultado.innerHTML = `<span class="error">Erro:</span> Cole o XML do MDF-e.`;
         return;
       }
-
       if (!accessToken) {
-        resultado.innerHTML = `<span class="error">Erro:</span> Obtenha o token primeiro (Passo 1).`;
+        resultado.innerHTML = `<span class="error">Erro:</span> Obtenha o token primeiro.`;
         return;
       }
 
       try {
-        // URL ALTERADA: https://hmg-icomprova.nddcargo.com.br:9003
-        const response = await fetch("https://hmg-icomprova.nddcargo.com.br:9003/api/v2/Recepcoes/mdfe", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "Authorization": `Bearer ${accessToken}`
-          },
-          body: JSON.stringify({
-            documento: xml
-          })
-        });
+        const response = await fetch(
+          "https://hmg-icomprova.nddcargo.com.br:9003/api/v2/recepcoes/mdfe",
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              "Authorization": `Bearer ${accessToken}`
+            },
+            body: JSON.stringify({ documento: xml })
+          }
+        );
 
         const text = await response.text();
 
@@ -157,13 +167,13 @@
         }
 
         const data = JSON.parse(text);
-        
         if (data.token) {
           tokenViagemGerado = data.token;
           document.getElementById("tokenViagem").value = data.token;
         }
 
-        resultado.innerHTML = `<span class="success">✅ RESPOSTA DO MDF-e:</span>\n${JSON.stringify(data, null, 2)}`;
+        resultado.innerHTML =
+          `<span class="success">RESPOSTA MDF-e</span>\n${JSON.stringify(data, null, 2)}`;
       } catch (err) {
         resultado.innerHTML = `<span class="error">Erro de conexão:</span>\n${err.message}`;
       }
@@ -174,38 +184,29 @@
       resultado.textContent = "Enviando CT-e...";
 
       const xml = document.getElementById("xmlCTe").value.trim();
-      const tokenViagemInput = document.getElementById("tokenViagem").value.trim();
-      
+      const tokenViagem = document.getElementById("tokenViagem").value.trim() || tokenViagemGerado;
+
       if (!xml) {
-        resultado.innerHTML = `<span class="error">Erro:</span> Cole o XML do CT-e primeiro.`;
+        resultado.innerHTML = `<span class="error">Erro:</span> Cole o XML do CT-e.`;
         return;
       }
-
       if (!accessToken) {
-        resultado.innerHTML = `<span class="error">Erro:</span> Obtenha o token primeiro (Passo 1).`;
+        resultado.innerHTML = `<span class="error">Erro:</span> Obtenha o token primeiro.`;
         return;
       }
 
       try {
-        const bodyData = {
-          documento: xml
-        };
-
-        if (tokenViagemInput) {
-          bodyData.token = tokenViagemInput;
-        } else if (tokenViagemGerado) {
-          bodyData.token = tokenViagemGerado;
-        }
-
-        // URL ALTERADA: https://hmg-icomprova.nddcargo.com.br:9003
-        const response = await fetch("https://hmg-icomprova.nddcargo.com.br:9003/api/v2/Recepcoes/cte", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "Authorization": `Bearer ${accessToken}`
-          },
-          body: JSON.stringify(bodyData)
-        });
+        const response = await fetch(
+          "https://hmg-icomprova.nddcargo.com.br:9003/api/v2/recepcoes/cte",
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              "Authorization": `Bearer ${accessToken}`
+            },
+            body: JSON.stringify({ documento: xml, token: tokenViagem })
+          }
+        );
 
         const text = await response.text();
 
@@ -215,7 +216,8 @@
         }
 
         const data = JSON.parse(text);
-        resultado.innerHTML = `<span class="success">✅ RESPOSTA DO CT-e:</span>\n${JSON.stringify(data, null, 2)}`;
+        resultado.innerHTML =
+          `<span class="success">RESPOSTA CT-e</span>\n${JSON.stringify(data, null, 2)}`;
       } catch (err) {
         resultado.innerHTML = `<span class="error">Erro de conexão:</span>\n${err.message}`;
       }
