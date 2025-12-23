@@ -1,163 +1,149 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-  <meta charset="UTF-8">
-  <title>Teste Endpoints iComprova</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      background: #0e0e0e;
-      color: #ffffff;
-      padding: 30px;
-    }
-    button {
-      padding: 12px 20px;
-      font-size: 16px;
-      cursor: pointer;
-      background: #1e88e5;
-      color: #fff;
-      border: none;
-      border-radius: 4px;
-      margin: 10px 5px;
-    }
-    pre {
-      margin-top: 20px;
-      background: #1c1c1c;
-      padding: 15px;
-      border-radius: 4px;
-      overflow-x: auto;
-      white-space: pre-wrap;
-    }
-    .error { color: #ff5252; }
-    .success { color: #4caf50; }
-  </style>
+    <title>Descobrir Endpoint iComprova</title>
+    <style>
+        body { font-family: Arial; padding: 20px; background: #111; color: white; }
+        button { padding: 10px 20px; background: #007bff; color: white; border: none; cursor: pointer; }
+        pre { background: #222; padding: 15px; border-radius: 5px; overflow-x: auto; margin-top: 10px; }
+        .found { background: #155724; color: #d4edda; padding: 10px; margin: 5px 0; }
+    </style>
 </head>
 <body>
+    <h2>Descobrir Endpoint da API</h2>
+    <button onclick="discover()">🔍 Iniciar Teste</button>
+    <pre id="result">Clique no botão para iniciar a descoberta.</pre>
 
-  <h2>Teste de Endpoints iComprova</h2>
-  <button onclick="testarEndpoints()">Testar Todos os Endpoints</button>
-  <pre id="resultado">Clique para testar endpoints...</pre>
+    <script>
+        let currentToken = '';
 
-  <script>
-    let accessToken = '';
-
-    async function obterToken() {
-      const body = new URLSearchParams({
-        client_id: "4a3a17846e714b3288682c5260455347",
-        client_secret: "FFVkTyaM4zVsLYAhKpGIT57C72EzYPSOqFO+O/P9y0Y=",
-        scope: "i-comprova-entregas-integration-api",
-        grant_type: "client_credentials"
-      });
-
-      const response = await fetch("https://icomprova.nddcargo.com.br:9051/connect/token", {
-        method: "POST",
-        headers: { "Content-Type": "application/x-www-form-urlencoded" },
-        body: body.toString()
-      });
-
-      const data = await response.json();
-      if (response.ok) {
-        accessToken = data.access_token;
-        return true;
-      }
-      return false;
-    }
-
-    async function testarEndpoint(url, method = 'GET') {
-      try {
-        const response = await fetch(url, {
-          method: method,
-          headers: {
-            "Authorization": `Bearer ${accessToken}`,
-            "Content-Type": "application/json"
-          }
-        });
-        return { url, status: response.status, ok: response.ok };
-      } catch (err) {
-        return { url, status: 'ERRO', ok: false, error: err.message };
-      }
-    }
-
-    async function testarEndpoints() {
-      const resultado = document.getElementById("resultado");
-      resultado.textContent = "Testando endpoints...\n\n";
-      
-      // Primeiro pega token
-      resultado.textContent += "1. Obtendo token...\n";
-      const tokenOk = await obterToken();
-      
-      if (!tokenOk) {
-        resultado.textContent += "❌ Erro ao obter token\n";
-        return;
-      }
-      
-      resultado.textContent += "✅ Token obtido\n\n";
-      resultado.textContent += "2. Testando endpoints...\n\n";
-      
-      // Testa diferentes padrões de URL
-      const endpoints = [
-        // Padrão 1: /api/Recepcoes/MDFe
-        "https://icomprova.nddcargo.com.br:9051/api/Recepcoes/MDFe",
-        "https://icomprova.nddcargo.com.br:9051/api/recepcoes/mdfe",
-        "https://icomprova.nddcargo.com.br:9051/api/MDFe",
-        "https://icomprova.nddcargo.com.br:9051/api/mdfe",
-        
-        // Padrão 2: /api/v1/...
-        "https://icomprova.nddcargo.com.br:9051/api/v1/Recepcoes/MDFe",
-        "https://icomprova.nddcargo.com.br:9051/api/v1/recepcoes/mdfe",
-        
-        // Padrão 3: /api/integracao/...
-        "https://icomprova.nddcargo.com.br:9051/api/integracao/mdfe",
-        "https://icomprova.nddcargo.com.br:9051/api/integracao/cte",
-        
-        // Padrão 4: Direto na raiz
-        "https://icomprova.nddcargo.com.br:9051/Recepcoes/MDFe",
-        "https://icomprova.nddcargo.com.br:9051/recepcoes/mdfe",
-        
-        // Padrão 5: Com diferente porta
-        "https://icomprova.nddcargo.com.br/api/Recepcoes/MDFe",
-        "https://icomprova.nddcargo.com.br/api/recepcoes/mdfe",
-      ];
-      
-      for (let i = 0; i < endpoints.length; i++) {
-        const endpoint = endpoints[i];
-        resultado.textContent += `Testando: ${endpoint}\n`;
-        
-        const result = await testarEndpoint(endpoint, 'GET');
-        
-        if (result.ok) {
-          resultado.textContent += `✅ Status ${result.status} - ENDPOINT ENCONTRADO!\n\n`;
-          // Se encontrou um que funciona, testa os outros métodos
-          resultado.textContent += `Agora testando POST em: ${endpoint}\n`;
-          
-          try {
-            const postResponse = await fetch(endpoint, {
-              method: 'POST',
-              headers: {
-                "Authorization": `Bearer ${accessToken}`,
-                "Content-Type": "application/json"
-              },
-              body: JSON.stringify({ documento: "test" })
+        async function getAuthToken() {
+            // Usando EXATAMENTE suas credenciais e fluxo
+            const body = new URLSearchParams({
+                client_id: "4a3a17846e714b3288682c5260455347",
+                client_secret: "FFVkTyaM4zVsLYAhKpGIT57C72EzYPSOqFO+O/P9y0Y=",
+                scope: "i-comprova-entregas-integration-api",
+                grant_type: "client_credentials"
             });
-            resultado.textContent += `POST: Status ${postResponse.status}\n`;
-          } catch (e) {
-            resultado.textContent += `POST Erro: ${e.message}\n`;
-          }
-          
-          resultado.textContent += "\n";
-          break;
-        } else {
-          resultado.textContent += `❌ Status ${result.status}\n`;
-        }
-        
-        // Pequena pausa entre requisições
-        await new Promise(resolve => setTimeout(resolve, 500));
-      }
-      
-      resultado.textContent += "\n✅ Teste completo!";
-    }
-  </script>
 
+            const response = await fetch("https://icomprova.nddcargo.com.br:9051/connect/token", {
+                method: "POST",
+                headers: { "Content-Type": "application/x-www-form-urlencoded" },
+                body: body.toString()
+            });
+
+            const data = await response.json();
+            if (response.ok) {
+                currentToken = data.access_token;
+                return true;
+            }
+            return false;
+        }
+
+        async function testEndpoint(baseUrl, path) {
+            const fullUrl = `${baseUrl}${path}`;
+            try {
+                const response = await fetch(fullUrl, {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': `Bearer ${currentToken}`
+                    }
+                });
+                // O que importa é se a URL existe (status 2xx, 4xx, 5xx) ou não (erro de rede/CORS)
+                return {
+                    url: fullUrl,
+                    status: response.status,
+                    exists: response.status !== 404 // Considera que existe se não for 404
+                };
+            } catch (error) {
+                // Erro de rede, CORS, etc. A URL não é acessível.
+                return {
+                    url: fullUrl,
+                    status: 'NETWORK_ERROR',
+                    exists: false
+                };
+            }
+        }
+
+        async function discover() {
+            const resultElement = document.getElementById('result');
+            resultElement.innerHTML = "Obtendo token de autenticação...\n";
+
+            // 1. Pega o token
+            const tokenOk = await getAuthToken();
+            if (!tokenOk) {
+                resultElement.innerHTML += "❌ Falha ao obter token. Verifique as credenciais.\n";
+                return;
+            }
+            resultElement.innerHTML += "✅ Token obtido com sucesso.\n\n";
+            resultElement.innerHTML += "Iniciando teste de endpoints...\n\n";
+
+            const baseDomain = 'https://icomprova.nddcargo.com.br:9051';
+            
+            // Lista de PREFIXOS comuns que podem estar antes do endpoint
+            // A ideia é descobrir qual é a "raiz" da API (api/, api/v1/, /integracao/, etc.)
+            const prefixPathsToTest = [
+                '', // Testa a raiz pura
+                '/api',
+                '/api/v1',
+                '/api/v2',
+                '/v1',
+                '/v2',
+                '/integracao',
+                '/api/integracao',
+                '/rest',
+                '/service'
+            ];
+
+            let foundBase = null;
+
+            // Testa cada prefixo
+            for (const prefix of prefixPathsToTest) {
+                const testUrl = `${baseDomain}${prefix}`;
+                resultElement.innerHTML += `Testando: <code>${testUrl}</code> ... `;
+
+                const testResult = await testEndpoint(baseDomain, prefix);
+
+                if (testResult.exists && testResult.status !== 404) {
+                    // Se não deu 404, encontramos uma raiz potencial!
+                    foundBase = prefix;
+                    resultElement.innerHTML += `<span class="found">✅ ENCONTRADO! (Status: ${testResult.status})</span>\n`;
+                    break; // Para no primeiro que achar
+                } else {
+                    resultElement.innerHTML += `❌ (Status: ${testResult.status})\n`;
+                }
+                // Pequena pausa para não sobrecarregar
+                await new Promise(r => setTimeout(r, 300));
+            }
+
+            resultElement.innerHTML += "\n---\n";
+
+            if (foundBase !== null) {
+                // Se achou uma raiz, testa o endpoint completo de MDFe nela
+                resultElement.innerHTML += `<strong>Base encontrada:</strong> <code>${foundBase}</code>\n`;
+                const finalMdfePath = `${foundBase}/Recepcoes/MDFe`;
+                const finalCtePath = `${foundBase}/Recepcoes/CTe`;
+
+                resultElement.innerHTML += `\nTestando endpoint MDF-e: <code>${finalMdfePath}</code> ... `;
+                const mdfeTest = await testEndpoint(baseDomain, finalMdfePath);
+                resultElement.innerHTML += `Status: ${mdfeTest.status}\n`;
+
+                resultElement.innerHTML += `Testando endpoint CT-e: <code>${finalCtePath}</code> ... `;
+                const cteTest = await testEndpoint(baseDomain, finalCtePath);
+                resultElement.innerHTML += `Status: ${cteTest.status}\n`;
+
+                // Conclusão
+                resultElement.innerHTML += `\n🎯 <strong>URL FINAL SUGERIDA PARA TESTE:</strong>\n`;
+                resultElement.innerHTML += `<code>${baseDomain}${finalMdfePath}</code>\n`;
+            } else {
+                resultElement.innerHTML += "❌ Nenhuma raiz de API comum foi encontrada no domínio fornecido.\n";
+                resultElement.innerHTML += "\nIsso indica que:\n";
+                resultElement.innerHTML += "1. O domínio base pode estar incorreto; OU\n";
+                resultElement.innerHTML += "2. A API exige um caminho específico não testado; OU\n";
+                resultElement.innerHTML += "3. A API não está acessível via navegador (CORS).\n";
+                resultElement.innerHTML += "\n<strong>Próximo passo obrigatório:</strong> Contatar o suporte do iComprova/NDD Cargo e solicitar a <em>URL de integração completa</em> para a API de recepção de documentos (não apenas para o token).";
+            }
+        }
+    </script>
 </body>
 </html>
