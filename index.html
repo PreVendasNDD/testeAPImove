@@ -2,21 +2,20 @@
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8">
-<title>iComprova GitHub</title>
+<title>iComprova – GitHub</title>
 </head>
 <body style="background:#111;color:#fff;font-family:Arial;padding:30px">
 
-<h2>Enviar MDF-e (GitHub Only)</h2>
+<h2>Enviar MDF-e + CT-e (GitHub)</h2>
 
-<textarea id="xml" style="width:100%;height:200px"></textarea><br>
+<textarea id="mdfe" style="width:100%;height:150px" placeholder="XML MDF-e"></textarea><br>
+<textarea id="cte" style="width:100%;height:150px" placeholder="XML CT-e"></textarea><br>
+
 <button onclick="enviar()">Enviar</button>
-
 <pre id="out"></pre>
 
 <script>
 async function enviar(){
-  const xml = document.getElementById("xml").value;
-
   await fetch(
     "https://api.github.com/repos/SEU_USUARIO/SEU_REPO/dispatches",
     {
@@ -25,22 +24,17 @@ async function enviar(){
         "Authorization": "token SEU_GITHUB_TOKEN",
         "Accept": "application/vnd.github+json"
       },
-      body: JSON.stringify({
-        event_type: "workflow_dispatch",
-        client_payload: {}
-      })
+      body: JSON.stringify({ event_type: "workflow_dispatch" })
     }
   );
-
   document.getElementById("out").textContent =
-    "Enviado. Aguarde ~20s e atualize para ver o resultado.";
+    "Workflow disparado. Aguarde ~20–40s e atualize.";
 }
 
 async function ler(){
   const r = await fetch("responses/result.json?"+Date.now());
   document.getElementById("out").textContent = await r.text();
 }
-
 setInterval(ler, 5000);
 </script>
 
