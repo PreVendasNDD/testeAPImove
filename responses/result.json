@@ -1,4 +1,21 @@
 {
-  "mdfe": null,
-  "cte": null
+  "meta": {
+    "status": "idle",
+    "action": null,
+    "started_at": null,
+    "finished_at": null
+  },
+  "token": {
+    "masked": null,
+    "expires_in": null
+  },
+  "mdfe": {
+    "http_status": null,
+    "body": null
+  },
+  "cte": {
+    "http_status": null,
+    "body": null
+  },
+  "logs": []
 }
