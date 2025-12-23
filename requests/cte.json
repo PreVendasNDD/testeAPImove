@@ -1,1 +1,4 @@
-{ "documento": "", "token": "" }
+{
+  "documento": "<cteProc>...</cteProc>",
+  "token": "opcional"
+}
