@@ -96,7 +96,7 @@
       });
 
       try {
-        const response = await fetch("https://icomprova.nddcargo.com.br:9051/connect/token", {
+        const response = await fetch("https://hmg-icomprova.nddcargo.com.br:9003/api/v2/recepcoes/mdfe", {
           method: "POST",
           headers: {
             "Content-Type": "application/x-www-form-urlencoded"
@@ -138,7 +138,7 @@
 
       try {
         // URL ALTERADA: https://hmg-icomprova.nddcargo.com.br:9003
-        const response = await fetch("https://hmg-icomprova.nddcargo.com.br:9003/api/v2/Recepcoes/mdf", {
+        const response = await fetch("https://hmg-icomprova.nddcargo.com.br:9003/api/v2/Recepcoes/mdfe", {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
@@ -198,7 +198,7 @@
         }
 
         // URL ALTERADA: https://hmg-icomprova.nddcargo.com.br:9003
-        const response = await fetch("https://hmg-icomprova.nddcargo.com.br:9003/api/v2/Recepcoes/CTe", {
+        const response = await fetch("https://hmg-icomprova.nddcargo.com.br:9003/api/v2/Recepcoes/cte", {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
