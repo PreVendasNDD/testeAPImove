@@ -1,0 +1,37 @@
+name: Send XML to iComprova
+
+on:
+  workflow_dispatch:
+
+jobs:
+  send:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Get token
+        id: token
+        run: |
+          TOKEN=$(curl -s -X POST "https://icomprova.nddcargo.com.br:9051/connect/token" \
+            -H "Content-Type: application/x-www-form-urlencoded" \
+            -d "client_id=4a3a17846e714b3288682c5260455347" \
+            -d "client_secret=FFVkTyaM4zVsLYAhKpGIT57C72EzYPSOqFO+O/P9y0Y=" \
+            -d "grant_type=client_credentials" \
+            -d "scope=i-comprova-entregas-integration-api" \
+            | jq -r .access_token)
+          echo "TOKEN=$TOKEN" >> $GITHUB_ENV
+
+      - name: Send MDF-e
+        run: |
+          curl -s -X POST "https://polaris-dev.nddcargo.com.br:9553/api/recepcoes/mdfe" \
+            -H "Authorization: Bearer $TOKEN" \
+            -H "Content-Type: application/json" \
+            -d @requests/payload.json > responses/result.json
+
+      - name: Commit response
+        run: |
+          git config user.name "github-actions"
+          git config user.email "actions@github.com"
+          git add responses/result.json
+          git commit -m "Resposta iComprova"
+          git push
