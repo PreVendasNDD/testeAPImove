@@ -1,0 +1,10 @@
+{
+  "status": "aguardando_execucao",
+  "tipo": "MDFE",
+  "ambiente": "polaris-dev",
+  "mensagem": "Nenhuma execução ainda. Dispare o workflow para gerar o resultado.",
+  "http_status": null,
+  "token_viagem": null,
+  "resposta_api": null,
+  "timestamp": null
+}
